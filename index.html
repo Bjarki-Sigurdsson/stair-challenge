@@ -196,7 +196,7 @@
             }, (error) => { console.error("Error fetching scores:", error); });
         }
         
-        // --- NEW: Daily Summary Logic ---
+        // --- Daily Summary Logic ---
         async function createDailySummaryIfNeeded() {
             const yesterday = new Date();
             yesterday.setDate(yesterday.getDate() - 1);
@@ -205,18 +205,10 @@
             const summaryCollectionPath = `/artifacts/${appId}/public/data/daily_summaries`;
             const summaryDocRef = doc(db, summaryCollectionPath, yesterdayId);
 
-            const summaryDoc = await getDocs(query(collection(db, summaryCollectionPath), where => doc.id === yesterdayId));
-            
-            // Check if summary for yesterday already exists
-            const summarySnapshot = await getDocs(query(collection(db, summaryCollectionPath)));
-            let summaryExists = false;
-            summarySnapshot.forEach(doc => {
-                if (doc.id === yesterdayId) {
-                    summaryExists = true;
-                }
-            });
+            // Efficiently check if the summary document for yesterday already exists.
+            const summaryDoc = await getDoc(summaryDocRef);
 
-            if (!summaryExists) {
+            if (!summaryDoc.exists()) {
                 console.log(`Creating daily summary for ${yesterdayId}...`);
                 const scoresCollectionPath = `/artifacts/${appId}/public/data/stairs_competition`;
                 const scoresSnapshot = await getDocs(collection(db, scoresCollectionPath));
@@ -375,6 +367,7 @@
     </script>
 </body>
 </html>
+
 
 
 
