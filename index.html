@@ -70,9 +70,15 @@
         // --- END OF EDIT SECTION ---
 
         // --- Firebase Configuration ---
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'stair-climb-default';
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        const firebaseConfig = {
+          apiKey: "AIzaSyAuCviosEvMuvlq899_w_E2ldHD6v4epTI",
+          authDomain: "stairclimbing-competition.firebaseapp.com",
+          projectId: "stairclimbing-competition",
+          storageBucket: "stairclimbing-competition.firebasestorage.app",
+          messagingSenderId: "408087478849",
+          appId: "1:408087478849:web:cc4430940e9ee7f6c43cc0",
+          measurementId: "G-3SC0FMDNCE"
+};
 
         // --- App Initialization ---
         let app, db, auth, userId;
@@ -310,3 +316,4 @@
     </script>
 </body>
 </html>
+
