@@ -74,11 +74,16 @@
           apiKey: "AIzaSyAuCviosEvMuvlq899_w_E2ldHD6v4epTI",
           authDomain: "stairclimbing-competition.firebaseapp.com",
           projectId: "stairclimbing-competition",
-          storageBucket: "stairclimbing-competition.firebasestorage.app",
+          storageBucket: "stairclimbing-competition.appspot.com",
           messagingSenderId: "408087478849",
           appId: "1:408087478849:web:cc4430940e9ee7f6c43cc0",
           measurementId: "G-3SC0FMDNCE"
-};
+        };
+        // This ID is used to create a unique path in the database. You can change it if you want to run multiple competitions.
+        const appId = 'stairclimbing-competition';
+        // This is a placeholder for a specific authentication method used in some environments. It should be null for self-hosting.
+        const initialAuthToken = null;
+
 
         // --- App Initialization ---
         let app, db, auth, userId;
@@ -367,8 +372,3 @@
     </script>
 </body>
 </html>
-
-
-
-
-
