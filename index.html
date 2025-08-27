@@ -195,6 +195,52 @@
                 updateUI(scores);
             }, (error) => { console.error("Error fetching scores:", error); });
         }
+        
+        // --- NEW: Daily Summary Logic ---
+        async function createDailySummaryIfNeeded() {
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayId = yesterday.toISOString().slice(0, 10);
+
+            const summaryCollectionPath = `/artifacts/${appId}/public/data/daily_summaries`;
+            const summaryDocRef = doc(db, summaryCollectionPath, yesterdayId);
+
+            const summaryDoc = await getDocs(query(collection(db, summaryCollectionPath), where => doc.id === yesterdayId));
+            
+            // Check if summary for yesterday already exists
+            const summarySnapshot = await getDocs(query(collection(db, summaryCollectionPath)));
+            let summaryExists = false;
+            summarySnapshot.forEach(doc => {
+                if (doc.id === yesterdayId) {
+                    summaryExists = true;
+                }
+            });
+
+            if (!summaryExists) {
+                console.log(`Creating daily summary for ${yesterdayId}...`);
+                const scoresCollectionPath = `/artifacts/${appId}/public/data/stairs_competition`;
+                const scoresSnapshot = await getDocs(collection(db, scoresCollectionPath));
+                
+                const summaryData = {
+                    date: yesterdayId,
+                    summaryTimestamp: serverTimestamp(),
+                    participants: {}
+                };
+
+                scoresSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    summaryData.participants[data.name] = {
+                        totalClimbs: data.totalClimbs || 0,
+                        // If the last climb was yesterday, use that daily count, otherwise it was 0.
+                        climbsOnThisDay: data.lastResetDate === yesterdayId ? (data.dailyClimbs || 0) : 0
+                    };
+                });
+                
+                await setDoc(summaryDocRef, summaryData);
+                console.log(`Daily summary for ${yesterdayId} created.`);
+            }
+        }
+
 
         // --- Event Handling ---
         participantCardsContainer.addEventListener('click', async (e) => {
@@ -209,23 +255,34 @@
                 button.disabled = true;
                 button.textContent = 'Logging...';
                 try {
+                    // This flag will be set if it's the first climb of a new day
+                    let isNewDay = false;
+
                     await runTransaction(db, async (transaction) => {
                         const sfDoc = await transaction.get(docRef);
                         const now = new Date();
                         const todayId = now.toISOString().slice(0, 10);
                         const weekId = getWeekId(now);
                         if (!sfDoc.exists()) {
+                            isNewDay = true;
                             transaction.set(docRef, { name, totalClimbs: 1, dailyClimbs: 1, weeklyClimbs: 1, lastResetDate: todayId, lastWeeklyResetId: weekId, lastUpdated: serverTimestamp() });
                         } else {
                             const data = sfDoc.data();
+                            if (data.lastResetDate !== todayId) { isNewDay = true; }
                             const newTotal = (data.totalClimbs || 0) + 1;
                             let newDaily = (data.dailyClimbs || 0) + 1;
                             let newWeekly = (data.weeklyClimbs || 0) + 1;
-                            if (data.lastResetDate !== todayId) { newDaily = 1; }
+                            if (isNewDay) { newDaily = 1; }
                             if (data.lastWeeklyResetId !== weekId) { newWeekly = 1; }
                             transaction.update(docRef, { totalClimbs: newTotal, dailyClimbs: newDaily, weeklyClimbs: newWeekly, lastResetDate: todayId, lastWeeklyResetId: weekId, lastUpdated: serverTimestamp() });
                         }
                     });
+
+                    // If it was the first climb of a new day, trigger the summary creation
+                    if (isNewDay) {
+                        await createDailySummaryIfNeeded();
+                    }
+
                     const climbsLogRef = collection(db, docRef.path, 'climbsLog');
                     await addDoc(climbsLogRef, { timestamp: serverTimestamp(), climberId: userId });
                     const auditLogCollectionPath = `/artifacts/${appId}/public/data/stairs_competition_log`;
@@ -261,7 +318,7 @@
             }
         });
 
-        // --- NEW: Reset Logic ---
+        // --- Reset Logic ---
         document.getElementById('reset-btn').addEventListener('click', async () => {
             const password = prompt("To reset all scores and logs, please enter the admin password:");
             const RESET_PASSWORD = "reset2025"; // You can change this password
@@ -280,22 +337,24 @@
             resetButton.textContent = "Resetting...";
 
             try {
+                const batch = writeBatch(db);
+
                 // Delete main scores
                 const scoresPath = `/artifacts/${appId}/public/data/stairs_competition`;
                 const scoresSnapshot = await getDocs(collection(db, scoresPath));
-                const batch1 = writeBatch(db);
-                scoresSnapshot.forEach(doc => batch1.delete(doc.ref));
-                await batch1.commit();
+                scoresSnapshot.forEach(doc => batch.delete(doc.ref));
 
                 // Delete audit log
                 const auditLogPath = `/artifacts/${appId}/public/data/stairs_competition_log`;
                 const auditLogSnapshot = await getDocs(collection(db, auditLogPath));
-                const batch2 = writeBatch(db);
-                auditLogSnapshot.forEach(doc => batch2.delete(doc.ref));
-                await batch2.commit();
+                auditLogSnapshot.forEach(doc => batch.delete(doc.ref));
+
+                // Delete daily summaries
+                const summaryPath = `/artifacts/${appId}/public/data/daily_summaries`;
+                const summarySnapshot = await getDocs(collection(db, summaryPath));
+                summarySnapshot.forEach(doc => batch.delete(doc.ref));
                 
-                // Note: The individual undo logs (subcollections) will remain but are now orphaned.
-                // This is generally fine and avoids much more complex recursive deletion logic.
+                await batch.commit();
 
                 alert("Competition has been successfully reset.");
 
@@ -316,5 +375,6 @@
     </script>
 </body>
 </html>
+
 
 
