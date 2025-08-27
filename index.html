@@ -256,14 +256,17 @@
                     const totalAscent = (player.totalClimbs || 0) * METERS_PER_CLIMB;
                     subTextHtml = `<span class="text-xs text-slate-500 block">${totalAscent} m</span>`;
                 }
+                
+                // Determine display of rank based on podium finish
+                const rankDisplay = (rank <= 3) ? `<span class="text-2xl">${medal}</span>` : `<span class="text-xl font-bold">${rank}.</span>`;
 
                 listItem.innerHTML = `
                     <div class="flex items-center">
-                        <span class="text-lg font-bold w-8">${rank}. ${medal}</span>
-                        <span class="text-lg font-medium">${player.name}</span>
+                        <span class="w-8 text-center">${(rank <= 3) ? medal : `<span class="text-xl font-bold">${rank}.</span>`}</span>
+                        <span class="text-xl font-medium">${player.name}</span>
                     </div>
                     <div class="text-right">
-                        <span class="text-xl font-bold text-indigo-600">${score}</span>
+                        <span class="text-2xl font-bold text-indigo-600">${score}</span>
                         ${subTextHtml}
                     </div>
                 `;
