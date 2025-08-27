@@ -247,7 +247,7 @@
                         <span class="mr-1">🔥</span><span id="streak-count-${name}">0</span>
                     </div>
                     <!-- Increased the font size of the name to be larger -->
-                    <div class="text-4xl font-semibold">${name}</div>
+                    <div class="text-3xl font-semibold">${name}</div>
                     <!-- Made the score significantly larger here -->
                     <div class="text-4xl font-bold my-1 text-indigo-600" id="score-${name}">0</div>
                     <div class="text-sm font-semibold text-slate-600" id="ascent-${name}">0 m ascent</div>
@@ -339,7 +339,7 @@
 
                 // Show or hide the streak icon based on the streak count
                 if (streakEl) {
-                    if (data.streak && data.streak > 1) { // Only show for streaks > 1
+                    if (data.streak && data.streak >= 1) { // Only show for streaks > 1
                         streakEl.classList.remove('hidden');
                         streakCountEl.textContent = data.streak;
                     } else {
@@ -677,6 +677,7 @@
     </script>
 </body>
 </html>
+
 
 
 
