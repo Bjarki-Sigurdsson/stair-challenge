@@ -7,7 +7,7 @@
     <!-- Use the Tailwind CSS CDN for easy styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Include Google Font 'Inter' for clean typography -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght=400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         /*
          * Main CSS for the background.
@@ -149,13 +149,13 @@
 
         // --- Firebase Configuration ---
         const firebaseConfig = {
-          apiKey: "AIzaSyAuCviosEvMuvlq899_w_E2ldHD6v4epTI",
-          authDomain: "stairclimbing-competition.firebaseapp.com",
-          projectId: "stairclimbing-competition",
-          storageBucket: "stairclimbing-competition.appspot.com",
-          messagingSenderId: "408087478849",
-          appId: "1:408087478849:web:cc4430940e9ee7f6c43cc0",
-          measurementId: "G-3SC0FMDNCE"
+            apiKey: "AIzaSyAuCviosEvMuvlq899_w_E2ldHD6v4epTI",
+            authDomain: "stairclimbing-competition.firebaseapp.com",
+            projectId: "stairclimbing-competition",
+            storageBucket: "stairclimbing-competition.appspot.com",
+            messagingSenderId: "408087478849",
+            appId: "1:408087478849:web:cc4430940e9ee7f6c43cc0",
+            measurementId: "G-3SC0FMDNCE"
         };
         const appId = 'stairclimbing-competition';
         const initialAuthToken = null;
@@ -739,19 +739,10 @@
 
         // --- App Start ---
         document.addEventListener('DOMContentLoaded', () => {
+            // Render participant cards immediately.
+            createParticipantCards(null);
             initializeFirebase();
         });
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
