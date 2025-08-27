@@ -65,7 +65,7 @@
         It has a semi-transparent dark background to improve readability of the text
         against the bright mountain image. We also use a backdrop-filter to blur the background slightly.
     -->
-    <div class="bg-black bg-opacity-20 p-4 md:p-8 rounded-2xl shadow-2xl max-w-4xl text-center backdrop-blur-sm w-full mx-auto my-auto relative z-10">
+    <div class="bg-black bg-opacity-10 p-4 md:p-8 rounded-2xl shadow-2xl max-w-4xl text-center backdrop-blur-sm w-full mx-auto my-auto relative z-10">
 
         <header class="text-center mb-8 relative">
             <h1 class="text-white text-4xl md:text-5xl font-bold">Stair Climb Challenge!</h1>
@@ -75,7 +75,7 @@
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <!-- Overall Leaderboard Section -->
-            <section id="leaderboard-overall" class="bg-white p-6 rounded-2xl shadow-lg">
+            <section id="leaderboard-overall" class="bg-white bg-opacity-80 p-6 rounded-2xl shadow-lg">
                 <h2 class="text-2xl font-bold mb-4 text-center">Overall Leaderboard 🏆</h2>
                 <div id="leaderboard-list-overall" class="space-y-3">
                     <div class="text-center text-slate-500">Loading scores...</div>
@@ -83,7 +83,7 @@
             </section>
 
             <!-- Weekly Leaderboard Section -->
-            <section id="leaderboard-weekly" class="bg-white p-6 rounded-2xl shadow-lg">
+            <section id="leaderboard-weekly" class="bg-white bg-opacity-80 p-6 rounded-2xl shadow-lg">
                 <h2 class="text-2xl font-bold mb-4 text-center">This Week's Leaders 🗓️</h2>
                 <div id="leaderboard-list-weekly" class="space-y-3">
                     <div class="text-center text-slate-500">Loading scores...</div>
@@ -169,7 +169,7 @@
             participantCardsContainer.innerHTML = '';
             participants.forEach(name => {
                 const card = document.createElement('div');
-                card.className = 'bg-white p-4 rounded-2xl shadow-md flex flex-col items-center justify-center transition-transform hover:scale-105';
+                card.className = 'bg-white bg-opacity-80 p-4 rounded-2xl shadow-md flex flex-col items-center justify-center transition-transform hover:scale-105';
                 card.innerHTML = `
                     <div class="text-xl font-semibold">${name}</div>
                     <div class="text-4xl font-bold my-1 text-indigo-600" id="score-${name}">0</div>
@@ -466,4 +466,5 @@
     </script>
 </body>
 </html>
+
 
