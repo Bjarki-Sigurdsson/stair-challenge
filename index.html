@@ -319,24 +319,24 @@
                     });
 
         // --- NEW: log the undo action ---
-        const auditLogCollectionPath = `/artifacts/${appId}/public/data/stairs_competition_log`;
-        await addDoc(collection(db, auditLogCollectionPath), { 
-            participantName: name, 
-            timestamp: serverTimestamp(), 
-            date: new Date().toISOString().slice(0, 10), 
-            climberId: userId, 
-            action: "undo"    // distinguish from climbs
-        });
+                    const auditLogCollectionPath = `/artifacts/${appId}/public/data/stairs_competition_log`;
+                    await addDoc(collection(db, auditLogCollectionPath), { 
+                        participantName: name, 
+                        timestamp: serverTimestamp(), 
+                        date: new Date().toISOString().slice(0, 10), 
+                        climberId: userId, 
+                        action: "undo"    // distinguish from climbs
+                    });
 
-    } catch (error) { 
-        console.error("Undo failed: ", error); 
-    } finally { 
-        setTimeout(() => { 
-            button.disabled = false; 
-            button.textContent = 'Oops, undo last'; 
-        }, 500); 
-    }
-}
+                } catch (error) { 
+                    console.error("Undo failed: ", error); 
+                } finally { 
+                    setTimeout(() => { 
+                        button.disabled = false; 
+                        button.textContent = 'Oops, undo last'; 
+                    }, 500); 
+                }
+            }
 
         // --- Reset Logic ---
         document.getElementById('reset-btn').addEventListener('click', async () => {
@@ -395,4 +395,5 @@
     </script>
 </body>
 </html>
+
 
