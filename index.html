@@ -20,31 +20,31 @@
         .mountain-bg {
             /* Set the background image to a high-quality mountain range. */
             background-image: url('https://images.unsplash.com/photo-1549880338-65ddcdfd017b?q=80&w=2938&auto=format&fit=crop&ixlib=rb-4.0.3');
-            
+
             /*
              * background-size: 'cover' scales the image to be as large as possible
              * so that the background area is completely covered by the image.
              * Some parts of the image may not be in view.
              */
             background-size: cover;
-            
+
             /*
              * background-position: 'center' centers the image horizontally and vertically.
              */
             background-position: center;
-            
+
             /*
              * background-repeat: 'no-repeat' prevents the image from tiling (repeating).
              */
             background-repeat: no-repeat;
-            
+
             /*
              * background-attachment: 'fixed' keeps the background image in the same
              * position relative to the viewport. This creates a cool parallax-like
              * effect when the user scrolls.
              */
             background-attachment: fixed;
-            
+
             /*
              * Set the minimum height of the body to 100% of the viewport height.
              * This is important to ensure the background covers the entire screen,
@@ -53,6 +53,7 @@
             min-height: 100vh;
         }
         
+        /* Podium colors for the leaderboard. */
         .podium-1 { border-color: #FFD700; } /* Gold */
         .podium-2 { border-color: #C0C0C0; } /* Silver */
         .podium-3 { border-color: #CD7F32; } /* Bronze */
@@ -67,7 +68,7 @@
 </head>
 <body class="mountain-bg flex items-center justify-center p-4">
 
-    <!-- 
+    <!--  
         This is a new container for all the app's content. 
         It has a semi-transparent dark background to improve readability of the text
         against the bright mountain image. We also use a backdrop-filter to blur the background slightly.
@@ -83,7 +84,7 @@
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <!-- Overall Leaderboard Section -->
-            <section id="leaderboard-overall" class="bg-white p-3 rounded-2xl shadow-lg">
+            <section id="leaderboard-overall" class="bg-white p-3 rounded-2xl font-bold shadow-lg bg-opacity-80">
                 <h2 class="text-3xl font-bold mb-4 text-center">Overall Leaderboard 🏆</h2>
                 <!-- Changed space-y-3 to space-y-2 for smaller spacing -->
                 <div id="leaderboard-list-overall" class="space-y-1">
@@ -92,7 +93,7 @@
             </section>
 
             <!-- Weekly Leaderboard Section -->
-            <section id="leaderboard-weekly" class="bg-white p-3 rounded-2xl shadow-lg">
+            <section id="leaderboard-weekly" class="bg-white p-3 rounded-2xl font-bold shadow-lg bg-opacity-80">
                 <h2 class="text-3xl font-bold mb-4 text-center">This Week's Leaders 🗓️</h2>
                 <!-- Changed space-y-3 to space-y-2 for smaller spacing -->
                 <div id="leaderboard-list-weekly" class="space-y-1">
@@ -111,6 +112,17 @@
         
         <!-- User ID display -->
         <div id="user-info" class="text-center mt-8 text-xs text-slate-400"></div>
+    </div>
+    
+    <!-- Custom Modal/Dialog for alerts and confirmations -->
+    <div id="modal-container" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black bg-opacity-50">
+        <div class="bg-white p-6 rounded-lg shadow-xl text-center max-w-sm w-full mx-4">
+            <p id="modal-text" class="text-lg font-medium mb-4"></p>
+            <div id="modal-actions" class="flex justify-center space-x-4">
+                <button id="modal-confirm-btn" class="bg-red-500 text-white font-bold py-2 px-6 rounded-full hover:bg-red-600">Confirm</button>
+                <button id="modal-cancel-btn" class="bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-full hover:bg-gray-400">Cancel</button>
+            </div>
+        </div>
     </div>
 
     <!-- Firebase and App Logic -->
@@ -141,8 +153,14 @@
 
         // --- App Initialization ---
         let app, db, auth, userId;
+        let isAuthReady = false;
 
         // --- Date Helper ---
+        /**
+         * Calculates the week number for a given date.
+         * @param {Date} d - The date object.
+         * @returns {string} The year and week number in 'YYYY-WW' format.
+         */
         function getWeekId(d) {
             d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
             d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
@@ -175,7 +193,7 @@
 
             if (diffInDays === 1) {
                 return isWeekday(newDateStr);
-            } else if (lastDate.getUTCDay() === 5 && newDate.getUTCDay() === 1) { // Friday to Monday
+            } else if (lastDate.getUTCDay() === 5 && newDate.getUTCDay() === 1 && diffInDays <= 3) { // Friday to Monday
                 return true;
             }
 
@@ -187,18 +205,27 @@
                 app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
-            } catch (e) { console.error("Firebase initialization failed:", e); return; }
+            } catch (e) {
+                console.error("Firebase initialization failed:", e);
+                return;
+            }
 
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
                     userId = user.uid;
+                    isAuthReady = true;
                     document.getElementById('user-info').textContent = `Your User ID: ${userId}`;
                     setupRealtimeListener();
                 } else {
                     try {
-                        if (initialAuthToken) { await signInWithCustomToken(auth, initialAuthToken); } 
-                        else { await signInAnonymously(auth); }
-                    } catch (error) { console.error("Anonymous sign-in failed:", error); }
+                        if (initialAuthToken) {
+                            await signInWithCustomToken(auth, initialAuthToken);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                    } catch (error) {
+                        console.error("Anonymous sign-in failed:", error);
+                    }
                 }
             });
         }
@@ -206,10 +233,12 @@
         // --- UI Rendering ---
         const participantCardsContainer = document.getElementById('participant-cards');
 
+        /**
+         * Dynamically creates the participant cards on the page.
+         */
         function createParticipantCards() {
             participantCardsContainer.innerHTML = '';
             participants.forEach(name => {
-                // Change the bg-white to bg-white bg-opacity-80
                 const card = document.createElement('div');
                 card.className = 'bg-white bg-opacity-80 p-4 rounded-2xl shadow-md flex flex-col items-center justify-center transition-transform hover:scale-105 relative';
                 card.innerHTML = `
@@ -217,7 +246,8 @@
                     <div id="streak-${name}" class="streak-container hidden bg-red-500 text-white text-xs font-bold py-1 px-3 rounded-full">
                         <span class="mr-1">🔥</span><span id="streak-count-${name}">0</span>
                     </div>
-                    <div class="text-xl font-semibold">${name}</div>
+                    <!-- Increased the font size of the name to be larger -->
+                    <div class="text-2xl font-semibold">${name}</div>
                     <!-- Made the score significantly larger here -->
                     <div class="text-4xl font-bold my-1 text-indigo-600" id="score-${name}">0</div>
                     <div class="text-sm font-semibold text-slate-600" id="ascent-${name}">0 m ascent</div>
@@ -232,6 +262,13 @@
             });
         }
         
+        /**
+         * Renders the leaderboard in the specified container.
+         * @param {string} containerId - The ID of the container element.
+         * @param {object} scores - The scores data.
+         * @param {string} scoreType - The score field to display (e.g., 'totalClimbs').
+         * @param {boolean} showAscent - Whether to display the total meters climbed.
+         */
         function renderLeaderboard(containerId, scores, scoreType, showAscent) {
             const container = document.getElementById(containerId);
             const sortedScores = Object.values(scores).sort((a, b) => (b[scoreType] || 0) - (a[scoreType] || 0));
@@ -250,7 +287,6 @@
                 else if (rank === 2) { medal = '🥈'; podiumClass = 'podium-2'; }
                 else if (rank === 3) { medal = '🥉'; podiumClass = 'podium-3'; }
 
-                // Change the bg-white to bg-white bg-opacity-80
                 const listItem = document.createElement('div');
                 listItem.className = `flex items-center justify-between p-3 bg-white bg-opacity-80 rounded-lg border-2 border-transparent ${podiumClass}`;
                 const score = player[scoreType] || 0;
@@ -279,6 +315,10 @@
             });
         }
 
+        /**
+         * Updates the UI elements for a single participant.
+         * @param {object} scores - The full scores object from Firestore.
+         */
         function updateUI(scores) {
             participants.forEach(name => {
                 const data = scores[name] || {};
@@ -299,7 +339,7 @@
 
                 // Show or hide the streak icon based on the streak count
                 if (streakEl) {
-                    if (data.streak && data.streak >= 0) {
+                    if (data.streak && data.streak > 1) { // Only show for streaks > 1
                         streakEl.classList.remove('hidden');
                         streakCountEl.textContent = data.streak;
                     } else {
@@ -312,13 +352,19 @@
         }
 
         // --- Realtime Listener ---
+        /**
+         * Sets up the Firestore listener to get real-time score updates.
+         */
         function setupRealtimeListener() {
+            if (!db || !isAuthReady) return;
             const collectionPath = `/artifacts/${appId}/public/data/stairs_competition`;
             onSnapshot(collection(db, collectionPath), (snapshot) => {
                 const scores = {};
                 snapshot.docs.forEach(doc => { scores[doc.id] = doc.data(); });
                 updateUI(scores);
-            }, (error) => { console.error("Error fetching scores:", error); });
+            }, (error) => {
+                console.error("Error fetching scores:", error);
+            });
         }
 
         // --- Daily Summary ---
@@ -330,28 +376,32 @@
             const summaryCollectionPath = `/artifacts/${appId}/public/data/daily_summaries`;
             const summaryDocRef = doc(db, summaryCollectionPath, yesterdayId);
 
-            const summaryDoc = await getDoc(summaryDocRef);
-            if (!summaryDoc.exists()) {
-                console.log(`Creating daily summary for ${yesterdayId}...`);
-                const scoresCollectionPath = `/artifacts/${appId}/public/data/stairs_competition`;
-                const scoresSnapshot = await getDocs(collection(db, scoresCollectionPath));
-                
-                const summaryData = {
-                    date: yesterdayId,
-                    summaryTimestamp: serverTimestamp(),
-                    participants: {}
-                };
-
-                scoresSnapshot.forEach(doc => {
-                    const data = doc.data();
-                    summaryData.participants[data.name] = {
-                        totalClimbs: data.totalClimbs || 0,
-                        climbsOnThisDay: data.lastResetDate === yesterdayId ? (data.dailyClimbs || 0) : 0
+            try {
+                const summaryDoc = await getDoc(summaryDocRef);
+                if (!summaryDoc.exists() && isWeekday(yesterdayId)) {
+                    console.log(`Creating daily summary for ${yesterdayId}...`);
+                    const scoresCollectionPath = `/artifacts/${appId}/public/data/stairs_competition`;
+                    const scoresSnapshot = await getDocs(collection(db, scoresCollectionPath));
+                    
+                    const summaryData = {
+                        date: yesterdayId,
+                        summaryTimestamp: serverTimestamp(),
+                        participants: {}
                     };
-                });
-                
-                await setDoc(summaryDocRef, summaryData);
-                console.log(`Daily summary for ${yesterdayId} created.`);
+
+                    scoresSnapshot.forEach(doc => {
+                        const data = doc.data();
+                        summaryData.participants[data.name] = {
+                            totalClimbs: data.totalClimbs || 0,
+                            climbsOnThisDay: data.lastClimbDate === yesterdayId ? (data.dailyClimbs || 0) : 0
+                        };
+                    });
+                    
+                    await setDoc(summaryDocRef, summaryData);
+                    console.log(`Daily summary for ${yesterdayId} created.`);
+                }
+            } catch (error) {
+                console.error("Failed to create daily summary:", error);
             }
         }
 
@@ -359,7 +409,7 @@
         participantCardsContainer.addEventListener('click', async (e) => {
             const button = e.target;
             const name = button.dataset.name;
-            if (!name) return;
+            if (!name || !isAuthReady) return;
 
             const collectionPath = `/artifacts/${appId}/public/data/stairs_competition`;
             const docRef = doc(db, collectionPath, name);
@@ -369,67 +419,77 @@
                 button.disabled = true;
                 button.textContent = 'Logging...';
                 try {
-                    let isNewDay = false;
                     let totalAfterClimb = 0;
-
+                    
                     await runTransaction(db, async (transaction) => {
                         const sfDoc = await transaction.get(docRef);
                         const now = new Date();
                         const todayId = now.toISOString().slice(0, 10);
                         const weekId = getWeekId(now);
-                        let newStreak = 0;
-
-                        if (!sfDoc.exists()) {
-                            isNewDay = true;
-                            totalAfterClimb = 1;
-                            if (isWeekday(todayId)) newStreak = 1;
-                            transaction.set(docRef, { name, totalClimbs: 1, dailyClimbs: 1, weeklyClimbs: 1, lastResetDate: todayId, lastWeeklyResetId: weekId, lastClimbDate: todayId, streak: newStreak, lastUpdated: serverTimestamp() });
+                        
+                        let data = {};
+                        if (sfDoc.exists()) {
+                            data = sfDoc.data();
                         } else {
-                            const data = sfDoc.data();
-                            const lastClimbDate = data.lastClimbDate || null;
-                            if (data.lastResetDate !== todayId) isNewDay = true;
-
-                            const newTotal = (data.totalClimbs || 0) + 1;
-                            let newDaily = (data.dailyClimbs || 0) + 1;
-                            let newWeekly = (data.weeklyClimbs || 0) + 1;
-                            
-                            // Streak logic
-                            let currentStreak = data.streak || 0;
-                            if (lastClimbDate === todayId) {
-                                // Already climbed today, streak doesn't change
-                                newStreak = currentStreak;
-                            } else if (lastClimbDate && isConsecutiveDay(lastClimbDate, todayId)) {
-                                // Consecutive day, increment streak
-                                newStreak = currentStreak + 1;
-                            } else if (isWeekday(todayId)) {
-                                // First climb of the day and not consecutive, start a new streak
-                                newStreak = 1;
-                            } else {
-                                // Not a weekday, streak is maintained but not incremented
-                                newStreak = currentStreak;
-                            }
-
-                            if (isNewDay) newDaily = 1;
-                            if (data.lastWeeklyResetId !== weekId) newWeekly = 1;
-                            
-                            totalAfterClimb = newTotal;
-                            transaction.update(docRef, { totalClimbs: newTotal, dailyClimbs: newDaily, weeklyClimbs: newWeekly, lastResetDate: todayId, lastWeeklyResetId: weekId, lastClimbDate: todayId, streak: newStreak, lastUpdated: serverTimestamp() });
+                            data = {
+                                name,
+                                totalClimbs: 0,
+                                dailyClimbs: 0,
+                                weeklyClimbs: 0,
+                                lastResetDate: todayId,
+                                lastWeeklyResetId: weekId,
+                                lastClimbDate: todayId,
+                                streak: 0,
+                                lastUpdated: serverTimestamp(),
+                                lastClimbLogId: null
+                            };
                         }
+
+                        // Check for new day/week and reset scores
+                        if (data.lastResetDate !== todayId) {
+                            data.dailyClimbs = 0;
+                            data.lastResetDate = todayId;
+                            // Reset streak if not consecutive day
+                            if (data.lastClimbDate && !isConsecutiveDay(data.lastClimbDate, todayId)) {
+                                data.streak = 0;
+                            }
+                        }
+                        if (data.lastWeeklyResetId !== weekId) {
+                            data.weeklyClimbs = 0;
+                            data.lastWeeklyResetId = weekId;
+                        }
+
+                        // Check and update streak
+                        if (data.lastClimbDate !== todayId && isWeekday(todayId)) {
+                            if (data.lastClimbDate && isConsecutiveDay(data.lastClimbDate, todayId)) {
+                                data.streak = (data.streak || 0) + 1;
+                            } else {
+                                data.streak = 1;
+                            }
+                        }
+
+                        // Update all scores for the transaction
+                        data.totalClimbs = (data.totalClimbs || 0) + 1;
+                        data.dailyClimbs = (data.dailyClimbs || 0) + 1;
+                        data.weeklyClimbs = (data.weeklyClimbs || 0) + 1;
+                        data.lastClimbDate = todayId;
+                        data.lastUpdated = serverTimestamp();
+                        totalAfterClimb = data.totalClimbs;
+
+                        transaction.set(docRef, data);
                     });
 
-                    if (isNewDay) await createDailySummaryIfNeeded();
-
+                    // Log the climb as a separate document and link it
                     const climbsLogRef = collection(db, docRef.path, 'climbsLog');
-                    await addDoc(climbsLogRef, { timestamp: serverTimestamp(), climberId: userId });
+                    const newLogDocRef = doc(climbsLogRef); // Create a document reference with an auto-generated ID
+                    await setDoc(newLogDocRef, { timestamp: serverTimestamp(), climberId: userId });
 
+                    // Log to a public audit log
                     const auditLogCollectionPath = `/artifacts/${appId}/public/data/stairs_competition_log`;
-                    const timestampId = new Date().toISOString();
-                    const logDocId = `${userId}-${timestampId}`;
-                    const logDocRef = doc(db, auditLogCollectionPath, logDocId);
-                    await setDoc(logDocRef, {
+                    await addDoc(collection(db, auditLogCollectionPath), {
                         participantName: name,
                         timestamp: serverTimestamp(),
-                        date: timestampId.slice(0, 10),
+                        date: new Date().toISOString().slice(0, 10),
                         climberId: userId,
                         action: "climb",
                         totalClimbsAfterAction: totalAfterClimb
@@ -450,43 +510,70 @@
                 button.disabled = true;
                 button.textContent = 'Undoing...';
                 try {
-                    let totalAfterUndo = 0;
                     const climbsLogRef = collection(db, docRef.path, 'climbsLog');
-                    const q = query(climbsLogRef, orderBy('timestamp', 'desc'), limit(1));
-                    const querySnapshot = await getDocs(q);
-                    if (querySnapshot.empty) return;
+                    const allClimbs = await getDocs(climbsLogRef);
 
-                    await deleteDoc(querySnapshot.docs[0].ref);
+                    // Find the last climb log by sorting in memory
+                    const sortedClimbs = allClimbs.docs.map(d => ({id: d.id, data: d.data()}))
+                        .sort((a, b) => b.data.timestamp.toDate() - a.data.timestamp.toDate());
+                    
+                    if (sortedClimbs.length === 0) {
+                        console.log("No climbs to undo.");
+                        return;
+                    }
+                    const lastClimbDocRef = doc(climbsLogRef, sortedClimbs[0].id);
 
+                    // Start transaction to update main document and then delete log
                     await runTransaction(db, async (transaction) => {
                         const sfDoc = await transaction.get(docRef);
                         if (!sfDoc.exists()) return;
 
                         const data = sfDoc.data();
-                        const now = new Date();
-                        const todayId = now.toISOString().slice(0, 10);
-                        const weekId = getWeekId(now);
-
                         const newTotal = Math.max(0, (data.totalClimbs || 0) - 1);
-                        let newDaily = data.lastResetDate === todayId ? Math.max(0, (data.dailyClimbs || 0) - 1) : (data.dailyClimbs || 0);
-                        let newWeekly = data.lastWeeklyResetId === weekId ? Math.max(0, (data.weeklyClimbs || 0) - 1) : (data.weeklyClimbs || 0);
+                        const newWeekly = Math.max(0, (data.weeklyClimbs || 0) - 1);
+                        const newDaily = Math.max(0, (data.dailyClimbs || 0) - 1);
                         
-                        totalAfterUndo = newTotal;
-                        transaction.update(docRef, { totalClimbs: newTotal, dailyClimbs: newDaily, weeklyClimbs: newWeekly, lastUpdated: serverTimestamp() });
+                        // Recalculate streak after undoing the last climb
+                        const todayId = new Date().toISOString().slice(0, 10);
+                        let newStreak = 0;
+                        if (sortedClimbs.length > 1) {
+                            const secondLastDateStr = sortedClimbs[1].data.timestamp.toDate().toISOString().slice(0, 10);
+                            if (isConsecutiveDay(secondLastDateStr, todayId)) {
+                                // If the day before the undone climb was a consecutive day, the streak continues
+                                newStreak = data.streak || 0;
+                            } else {
+                                // The streak is broken, reset to 1 if today's climb is the new streak starter.
+                                newStreak = (isWeekday(todayId) && newDaily > 0) ? 1 : 0;
+                            }
+                        } else {
+                            // Only one climb, so streak becomes 0 after undo
+                            newStreak = 0;
+                        }
+
+                        // Update the participant's main document
+                        transaction.update(docRef, { 
+                            totalClimbs: newTotal, 
+                            dailyClimbs: newDaily, 
+                            weeklyClimbs: newWeekly, 
+                            streak: newStreak,
+                            lastUpdated: serverTimestamp() 
+                        });
+                        
+                        // Delete the climb log document
+                        transaction.delete(lastClimbDocRef);
                     });
 
+                    // Log to a public audit log
                     const auditLogCollectionPath = `/artifacts/${appId}/public/data/stairs_competition_log`;
-                    const timestampId = new Date().toISOString();
-                    const logDocId = `${userId}-${timestampId}`;
-                    const logDocRef = doc(db, auditLogCollectionPath, logDocId);
-                    await setDoc(logDocRef, {
+                    await addDoc(collection(db, auditLogCollectionPath), {
                         participantName: name,
                         timestamp: serverTimestamp(),
-                        date: timestampId.slice(0,10),
+                        date: new Date().toISOString().slice(0, 10),
                         climberId: userId,
                         action: "undo",
-                        totalClimbsAfterAction: totalAfterUndo
+                        totalClimbsAfterAction: Math.max(0, (sfDoc.data().totalClimbs || 0) - 1)
                     });
+
                 } catch (error) {
                     console.error("Undo failed:", error);
                 } finally {
@@ -497,20 +584,61 @@
                 }
             }
         });
+        
+        // --- Modal Functions ---
+        const modalContainer = document.getElementById('modal-container');
+        const modalText = document.getElementById('modal-text');
+        const modalConfirmBtn = document.getElementById('modal-confirm-btn');
+        const modalCancelBtn = document.getElementById('modal-cancel-btn');
+
+        /**
+         * Shows a modal with a message and a single 'OK' button.
+         * @param {string} message - The message to display.
+         */
+        function showMessage(message) {
+            modalText.textContent = message;
+            modalConfirmBtn.textContent = 'OK';
+            modalConfirmBtn.onclick = hideModal;
+            modalCancelBtn.classList.add('hidden');
+            modalContainer.classList.remove('hidden');
+        }
+
+        /**
+         * Shows a modal with a message and 'Confirm' and 'Cancel' buttons.
+         * @param {string} message - The message to display.
+         * @returns {Promise<boolean>} A promise that resolves to true if confirmed, false if canceled.
+         */
+        function showConfirmation(message) {
+            return new Promise(resolve => {
+                modalText.textContent = message;
+                modalConfirmBtn.textContent = 'Yes, I\'m sure';
+                modalCancelBtn.textContent = 'Cancel';
+                modalCancelBtn.classList.remove('hidden');
+                
+                modalConfirmBtn.onclick = () => {
+                    hideModal();
+                    resolve(true);
+                };
+                modalCancelBtn.onclick = () => {
+                    hideModal();
+                    resolve(false);
+                };
+                
+                modalContainer.classList.remove('hidden');
+            });
+        }
+
+        /**
+         * Hides the modal window.
+         */
+        function hideModal() {
+            modalContainer.classList.add('hidden');
+        }
 
         // --- Reset Logic ---
         document.getElementById('reset-btn').addEventListener('click', async () => {
-            const password = prompt("To reset all scores and logs, please enter the admin password:");
-            const RESET_PASSWORD = "reset2025";
-
-            if (password !== RESET_PASSWORD) {
-                if (password !== null) alert("Incorrect password.");
-                return;
-            }
-
-            if (!confirm("Are you absolutely sure you want to delete ALL data for this competition? This cannot be undone.")) {
-                return;
-            }
+            const confirmed = await showConfirmation("Are you absolutely sure you want to delete ALL data for this competition? This cannot be undone.");
+            if (!confirmed) return;
 
             const resetButton = document.getElementById('reset-btn');
             resetButton.disabled = true;
@@ -531,10 +659,10 @@
                 summarySnapshot.forEach(doc => batch.delete(doc.ref));
                 
                 await batch.commit();
-                alert("Competition has been successfully reset.");
+                showMessage("Competition has been successfully reset.");
             } catch (error) {
                 console.error("Reset failed:", error);
-                alert("An error occurred during the reset process. Check the console for details.");
+                showMessage("An error occurred during the reset process. Check the console for details.");
             } finally {
                 resetButton.disabled = false;
                 resetButton.textContent = "Reset Competition";
@@ -549,6 +677,7 @@
     </script>
 </body>
 </html>
+
 
 
 
