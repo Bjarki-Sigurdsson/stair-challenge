@@ -60,7 +60,7 @@
         // IMPORTANT: Firebase imports. Do not change these.
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, collection, onSnapshot, runTransaction, setDoc, serverTimestamp, addDoc, query, orderBy, limit, getDocs, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, collection, onSnapshot, runTransaction, setDoc, serverTimestamp, addDoc, query, orderBy, limit, getDocs, getDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- ✏️ EDIT THIS SECTION ---
         // Add the names of all participants here.
@@ -367,6 +367,7 @@
     </script>
 </body>
 </html>
+
 
 
 
