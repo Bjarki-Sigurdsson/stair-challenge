@@ -289,13 +289,15 @@
             }
 
             if (button.classList.contains('undo-climb-btn')) {
-                button.disabled = true; button.textContent = 'Undoing...';
+                button.disabled = true; 
+                button.textContent = 'Undoing...';
                 try {
                     const climbsLogRef = collection(db, docRef.path, 'climbsLog');
                     const q = query(climbsLogRef, orderBy('timestamp', 'desc'), limit(1));
                     const querySnapshot = await getDocs(q);
                     if (querySnapshot.empty) { return; }
                     await deleteDoc(querySnapshot.docs[0].ref);
+
                     await runTransaction(db, async (transaction) => {
                         const sfDoc = await transaction.get(docRef);
                         if (!sfDoc.exists()) return;
@@ -308,12 +310,33 @@
                         let newWeekly = Math.max(0, (data.weeklyClimbs || 0) - 1);
                         if (data.lastResetDate !== todayId) { newDaily = 0; }
                         if (data.lastWeeklyResetId !== weekId) { newWeekly = 0; }
-                        transaction.update(docRef, { totalClimbs: newTotal, dailyClimbs: newDaily, weeklyClimbs: newWeekly, lastUpdated: serverTimestamp() });
+                        transaction.update(docRef, { 
+                            totalClimbs: newTotal, 
+                            dailyClimbs: newDaily, 
+                            weeklyClimbs: newWeekly, 
+                            lastUpdated: serverTimestamp() 
+                        });
                     });
-                } catch (error) { console.error("Undo failed: ", error); } 
-                finally { setTimeout(() => { button.disabled = false; button.textContent = 'Oops, undo last'; }, 500); }
-            }
+
+        // --- NEW: log the undo action ---
+        const auditLogCollectionPath = `/artifacts/${appId}/public/data/stairs_competition_log`;
+        await addDoc(collection(db, auditLogCollectionPath), { 
+            participantName: name, 
+            timestamp: serverTimestamp(), 
+            date: new Date().toISOString().slice(0, 10), 
+            climberId: userId, 
+            action: "undo"    // distinguish from climbs
         });
+
+    } catch (error) { 
+        console.error("Undo failed: ", error); 
+    } finally { 
+        setTimeout(() => { 
+            button.disabled = false; 
+            button.textContent = 'Oops, undo last'; 
+        }, 500); 
+    }
+}
 
         // --- Reset Logic ---
         document.getElementById('reset-btn').addEventListener('click', async () => {
@@ -372,3 +395,4 @@
     </script>
 </body>
 </html>
+
