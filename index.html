@@ -389,11 +389,38 @@
         const batch = writeBatch(db);
 
         // Delete main scores
-        const scoresPath = `/artifacts/${appId}/public/data/stairs_competition`;
-        const scoresSnapshot = await getDocs(collection(db, scoresPath));
-        scoresSnapshot.forEach(doc => batch.delete(doc.ref));
+                const scoresPath = `/artifacts/${appId}/public/data/stairs_competition`;
+                const scoresSnapshot = await getDocs(collection(db, scoresPath));
+                scoresSnapshot.forEach(doc => batch.delete(doc.ref));
 
-        // Delete audit log
-        const auditLogPath = `/artifacts/${appId}/public/data/stairs_competition_log`;
-        const auditLogSnapshot = await getDocs(collection(db, auditLogPath));
-        auditLogSnapshot.forEach(doc
+                // Delete audit log
+                const auditLogPath = `/artifacts/${appId}/public/data/stairs_competition_log`;
+                const auditLogSnapshot = await getDocs(collection(db, auditLogPath));
+                auditLogSnapshot.forEach(doc => batch.delete(doc.ref));
+
+                // Delete daily summaries
+                const summaryPath = `/artifacts/${appId}/public/data/daily_summaries`;
+                const summarySnapshot = await getDocs(collection(db, summaryPath));
+                summarySnapshot.forEach(doc => batch.delete(doc.ref));
+                
+                await batch.commit();
+
+                alert("Competition has been successfully reset.");
+
+            } catch (error) {
+                console.error("Reset failed:", error);
+                alert("An error occurred during the reset process. Check the console for details.");
+            } finally {
+                resetButton.disabled = false;
+                resetButton.textContent = "Reset Competition";
+            }
+        });
+
+        // --- App Start ---
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeFirebase();
+            createParticipantCards();
+        });
+    </script>
+</body>
+</html>
