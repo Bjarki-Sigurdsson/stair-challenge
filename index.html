@@ -83,19 +83,19 @@
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <!-- Overall Leaderboard Section -->
-            <section id="leaderboard-overall" class="bg-white p-6 rounded-2xl shadow-lg">
+            <section id="leaderboard-overall" class="bg-white p-6 rounded-3xl shadow-lg">
                 <h2 class="text-2xl font-bold mb-4 text-center">Overall Leaderboard 🏆</h2>
                 <!-- Changed space-y-3 to space-y-2 for smaller spacing -->
-                <div id="leaderboard-list-overall" class="space-y-2">
+                <div id="leaderboard-list-overall" class="space-y-1">
                     <div class="text-center text-slate-500">Loading scores...</div>
                 </div>
             </section>
 
             <!-- Weekly Leaderboard Section -->
-            <section id="leaderboard-weekly" class="bg-white p-6 rounded-2xl shadow-lg">
+            <section id="leaderboard-weekly" class="bg-white p-6 rounded-3xl shadow-lg">
                 <h2 class="text-2xl font-bold mb-4 text-center">This Week's Leaders 🗓️</h2>
                 <!-- Changed space-y-3 to space-y-2 for smaller spacing -->
-                <div id="leaderboard-list-weekly" class="space-y-2">
+                <div id="leaderboard-list-weekly" class="space-y-1">
                     <div class="text-center text-slate-500">Loading scores...</div>
                 </div>
             </section>
@@ -257,7 +257,7 @@
                 
                 let subTextHtml = '';
                 if (showAscent) {
-                    const totalAscent = (player.totalClimbs || 0) * METERS_PER_CLIMB;
+                    const totalAscent = (score || 0) * METERS_PER_CLIMB;
                     subTextHtml = `<span class="text-xs text-slate-500 block">${totalAscent} m</span>`;
                 }
                 
@@ -308,7 +308,7 @@
                 }
             });
             renderLeaderboard('leaderboard-list-overall', scores, 'totalClimbs', true);
-            renderLeaderboard('leaderboard-list-weekly', scores, 'weeklyClimbs', false);
+            renderLeaderboard('leaderboard-list-weekly', scores, 'weeklyClimbs', true);
         }
 
         // --- Realtime Listener ---
