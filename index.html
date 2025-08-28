@@ -310,7 +310,10 @@
                 return;
             }
 
-            sortedScores.forEach((player, index) => {
+            // Limit to top 3 entries
+            const top3Scores = sortedScores.slice(0, 3);
+
+            top3Scores.forEach((player, index) => {
                 const rank = index + 1;
                 let medal = '';
                 let podiumClass = '';
@@ -718,6 +721,14 @@
 
         // --- Reset Logic ---
         document.getElementById('reset-btn').addEventListener('click', async () => {
+            const password = prompt("To reset all scores and logs, please enter the admin password:");
+            const RESET_PASSWORD = "reset2025"; // Define your admin password here
+
+            if (password !== RESET_PASSWORD) {
+                if (password !== null) showMessage("Incorrect password. Reset aborted.");
+                return;
+            }
+
             const confirmed = await showConfirmation("Are you absolutely sure you want to delete ALL data for this competition? This cannot be undone.");
             if (!confirmed) return;
 
