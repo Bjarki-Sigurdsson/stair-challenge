@@ -458,7 +458,17 @@
         participantCardsContainer.addEventListener('click', async (e) => {
             const button = e.target;
             const name = button.dataset.name;
-            if (!name || !isAuthReady) return;
+            if (!name) { // Check for name first
+                console.log("No name found for clicked element.");
+                return;
+            }
+
+            // Ensure Firebase is ready before proceeding with any DB operations
+            if (!isAuthReady || !db || !userId) {
+                console.warn("Firebase not ready. Auth state:", isAuthReady, "DB:", db, "UserID:", userId);
+                showMessage("The app is still loading. Please wait a moment and try again.");
+                return;
+            }
 
             // Handle favorite button click
             if (button.classList.contains('favorite-btn')) {
@@ -467,13 +477,16 @@
                 try {
                     if (favoriteParticipant === name) {
                         // Unfavorite the participant
+                        console.log(`Unfavoriting ${name} for user ${userId}`);
                         await deleteDoc(favoriteDocRef);
                     } else {
                         // Favorite the participant
+                        console.log(`Favoriting ${name} for user ${userId}`);
                         await setDoc(favoriteDocRef, { name });
                     }
                 } catch (error) {
                     console.error("Failed to update favorite:", error);
+                    showMessage("Failed to update favorite. Please try again.");
                 }
                 return; // Exit here to prevent other button actions
             }
