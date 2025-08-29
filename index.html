@@ -701,29 +701,27 @@
                         const newWeekly = Math.max(0, (data.weeklyClimbs || 0) - 1);
                         const newDaily = Math.max(0, (data.dailyClimbs || 0) - 1);
                         
-                        // Recalculate streak after undoing the last climb
+                        let newStreak = data.streak || 0; // Start with the current streak
                         const todayId = new Date().toISOString().slice(0, 10);
-                        let newStreak = 0;
-                        if (sortedClimbs.length > 1) {
-                            const secondLastDateStr = sortedClimbs[1].data.timestamp.toDate().toISOString().slice(0, 10);
-                            if (isConsecutiveDay(secondLastDateStr, todayId)) {
-                                // If the day before the undone climb was a consecutive day, the streak continues
-                                newStreak = data.streak || 0;
-                            } else {
-                                // The streak is broken, reset to 1 if today's climb is the new streak starter.
-                                newStreak = (isWeekday(todayId) && newDaily > 0) ? 1 : 0;
+
+                        // Only adjust streak if the climb being undone was from today AND it's the last one for today
+                        if (data.lastClimbDate === todayId && newDaily === 0) {
+                            // If today was the start of the streak (streak was 1), it becomes 0.
+                            // If today extended a streak (streak was >1), it reverts to data.streak - 1.
+                            if (newStreak > 0) {
+                                newStreak = (newStreak > 1) ? (newStreak - 1) : 0;
                             }
-                        } else {
-                            // Only one climb, so streak becomes 0 after undo
-                            newStreak = 0;
+                            // If newStreak was already 0, it stays 0.
                         }
+                        // If newDaily > 0, the streak is maintained for today.
+                        // If data.lastClimbDate was not today, the undo doesn't affect today's streak (it's already adjusted by daily reset if applicable).
 
                         // Update the participant's main document
                         transaction.update(docRef, { 
                             totalClimbs: newTotal, 
                             dailyClimbs: newDaily, 
                             weeklyClimbs: newWeekly, 
-                            streak: newStreak,
+                            streak: newStreak, 
                             lastUpdated: serverTimestamp() 
                         });
                         
