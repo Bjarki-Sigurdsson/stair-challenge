@@ -163,8 +163,8 @@
         // --- App Initialization ---
         let app, db, auth, userId;
         let isAuthReady = false;
-        // Global variable to store the user's favorite participant.
         let favoriteParticipant = null;
+        let currentScores = {}; // Global variable to store the latest scores
 
         // --- Date Helper ---
         /**
@@ -227,7 +227,7 @@
                     isAuthReady = true;
                     document.getElementById('user-info').textContent = `Your User ID: ${userId}`;
                     setupRealtimeListener();
-                    setupFavoritesListener(); // Start listening for the user's favorite
+                    setupFavoritesListener(); 
                 } else {
                     try {
                         if (initialAuthToken) {
@@ -393,9 +393,9 @@
             if (!db || !isAuthReady) return;
             const collectionPath = `/artifacts/${appId}/public/data/stairs_competition`;
             onSnapshot(collection(db, collectionPath), (snapshot) => {
-                const scores = {};
-                snapshot.docs.forEach(doc => { scores[doc.id] = doc.data(); });
-                updateUI(scores);
+                currentScores = {}; // Update global scores
+                snapshot.docs.forEach(doc => { currentScores[doc.id] = doc.data(); });
+                updateUI(currentScores); // Now updateUI always uses the latest scores
             }, (error) => {
                 console.error("Error fetching scores:", error);
             });
@@ -413,7 +413,10 @@
                 } else {
                     favoriteParticipant = null;
                 }
+                // Call createParticipantCards here AFTER favoriteParticipant is known
                 createParticipantCards(favoriteParticipant);
+                // Also call updateUI here to populate scores immediately after cards are re-created/re-ordered
+                updateUI(currentScores); 
             }, (error) => {
                 console.error("Error fetching user preferences:", error);
             });
@@ -461,7 +464,7 @@
         participantCardsContainer.addEventListener('click', async (e) => {
             const button = e.target;
             const name = button.dataset.name;
-            if (!name) { // Check for name first
+            if (!name) { 
                 console.log("No name found for clicked element.");
                 return;
             }
@@ -479,11 +482,9 @@
                 
                 try {
                     if (favoriteParticipant === name) {
-                        // Unfavorite the participant
                         console.log(`Unfavoriting ${name} for user ${userId}`);
                         await deleteDoc(favoriteDocRef);
                     } else {
-                        // Favorite the participant
                         console.log(`Favoriting ${name} for user ${userId}`);
                         await setDoc(favoriteDocRef, { name });
                     }
@@ -491,7 +492,7 @@
                     console.error("Failed to update favorite:", error);
                     showMessage("Failed to update favorite. Please try again.");
                 }
-                return; // Exit here to prevent other button actions
+                return; 
             }
 
             // Handle add/undo climb buttons
@@ -643,7 +644,6 @@
                             lastUpdated: serverTimestamp() 
                         });
                         
-                        // Delete the climb log document
                         transaction.delete(lastClimbDocRef);
                     });
 
@@ -655,7 +655,7 @@
                         date: new Date().toISOString().slice(0, 10),
                         climberId: userId,
                         action: "undo",
-                        totalClimbsAfterAction: Math.max(0, (sfDoc.data().totalClimbs || 0) - 1)
+                        totalClimbsAfterAction: Math.max(0, (currentScores[name]?.totalClimbs || 0) - 1)
                     });
 
                 } catch (error) {
@@ -722,7 +722,7 @@
         // --- Reset Logic ---
         document.getElementById('reset-btn').addEventListener('click', async () => {
             const password = prompt("To reset all scores and logs, please enter the admin password:");
-            const RESET_PASSWORD = "reset2025"; // Define your admin password here
+            const RESET_PASSWORD = "reset2025"; 
 
             if (password !== RESET_PASSWORD) {
                 if (password !== null) showMessage("Incorrect password. Reset aborted.");
@@ -763,8 +763,6 @@
 
         // --- App Start ---
         document.addEventListener('DOMContentLoaded', () => {
-            // Render participant cards immediately.
-            createParticipantCards(null);
             initializeFirebase();
         });
     </script>
