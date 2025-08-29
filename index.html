@@ -73,16 +73,32 @@
             cursor: pointer;
             font-size: 1.5rem; /* Larger star */
         }
+
+        /* Styling for badges */
+        .badge-icon {
+            font-size: 1.5rem; /* Adjust size as needed */
+            margin: 0 0.25rem;
+            cursor: help; /* Indicate it's informational */
+        }
+
+        /* Styling for the badge reference list */
+        .badge-reference-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.25rem;
+            font-size: 0.9rem;
+            color: #4a5568; /* gray-700 for better readability on white background */
+        }
+        .badge-reference-item .icon {
+            font-size: 1.2rem;
+            margin-right: 0.5rem;
+        }
     </style>
 </head>
 <body class="mountain-bg flex items-center justify-center p-4">
 
-    <!--  
-        This is a new container for all the app's content. 
-        It has a semi-transparent dark background to improve readability of the text
-        against the bright mountain image. We also use a backdrop-filter to blur the background slightly.
-    -->
-    <div class="bg-black bg-opacity-10 p-4 md:p-8 rounded-2xl shadow-2xl max-w-4xl text-center backdrop-blur-sm w-full mx-auto my-auto relative z-10">
+    <!-- Main outer container for the entire app content -->
+    <div class="bg-black bg-opacity-10 p-4 md:p-8 rounded-2xl shadow-2xl max-w-screen-xl text-center backdrop-blur-sm w-full mx-auto my-auto relative z-10">
 
         <header class="text-center mb-8 relative">
             <!-- Increased heading size to make it more prominent -->
@@ -91,11 +107,11 @@
             <button id="reset-btn" class="absolute -top-5 -right-4 bg-red-500 text-white text-xs font-bold py-1 px-3 rounded-full hover:bg-red-600">Reset Competition</button>
         </header>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Container for Leaderboards and Badge Reference, now in a single grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
             <!-- Overall Leaderboard Section -->
             <section id="leaderboard-overall" class="bg-white p-3 rounded-2xl font-bold shadow-lg bg-opacity-80">
                 <h2 class="text-3xl font-bold mb-4 text-center">Overall Leaderboard 🏆</h2>
-                <!-- Changed space-y-3 to space-y-2 for smaller spacing -->
                 <div id="leaderboard-list-overall" class="space-y-1">
                     <div class="text-center text-slate-500">Loading scores...</div>
                 </div>
@@ -104,9 +120,17 @@
             <!-- Weekly Leaderboard Section -->
             <section id="leaderboard-weekly" class="bg-white p-3 rounded-2xl font-bold shadow-lg bg-opacity-80">
                 <h2 class="text-3xl font-bold mb-4 text-center">This Week's Leaders 🗓️</h2>
-                <!-- Changed space-y-3 to space-y-2 for smaller spacing -->
                 <div id="leaderboard-list-weekly" class="space-y-1">
                     <div class="text-center text-slate-500">Loading scores...</div>
+                </div>
+            </section>
+
+            <!-- Mountain Badges List -->
+            <section id="badge-reference-section" class="bg-white p-3 rounded-2xl font-bold shadow-lg bg-opacity-80">
+                <h3 class="text-xl font-bold text-gray-800 mb-2">Mountain Badges 🏆</h3>
+                <div id="badge-reference-list" class="flex flex-wrap justify-center lg:flex-col lg:items-start gap-x-4 gap-y-1">
+                    <!-- Badge reference items will be injected here by JavaScript -->
+                    <div class="text-gray-700">Loading badges...</div>
                 </div>
             </section>
         </div>
@@ -145,6 +169,17 @@
         // Add the names of all participants here.
         const participants = ["Anders L", "Anders S", "Annett", "Bjarki", "Eivind", "Erik Ø", "Erik T", "Felipe", "Flora", "Fredrik A", "Fredrik D", "Frode H", "Frode V", "Halvard", "Henok", "Kristin", "Lars", "Lene", "Love", "Magnus", "Måns", "Marcin", "Marcus", "Maria", "Martin", "Michal", "Morten", "Mostafa", "Niklas", "Omar", "Steinar", "Thomas", "Tina", "Tomas", "Vegard"];
         const METERS_PER_CLIMB = 14; // 4 floors * 3.5 meters per floor
+
+        // Define your mountain badges here with unique icons
+        const mountainBadges = [
+            { name: "Galdhøpiggen", heightMeters: 2469, icon: "🐑" }, // Sheep for Galdhøpiggen
+            { name: "Mount Fuji", heightMeters: 3776, icon: "🗻" }, 
+            { name: "Mount Rainier", heightMeters: 4392, icon: "🌋" }, 
+            { name: "Mont Blanc", heightMeters: 4808, icon: "🐐" }, // Goat for Mont Blanc
+            { name: "Everest Base Camp", heightMeters: 5364, icon: "🏕️" },
+            { name: "Mount Kilimanjaro", heightMeters: 5895, icon: "🌍" }, 
+            { name: "Mount Everest Summit", heightMeters: 8848, icon: "🔝" } 
+        ].sort((a, b) => a.heightMeters - b.heightMeters); // Sort by height for easier checking
         // --- END OF EDIT SECTION ---
 
         // --- Firebase Configuration ---
@@ -228,6 +263,7 @@
                     document.getElementById('user-info').textContent = `Your User ID: ${userId}`;
                     setupRealtimeListener();
                     setupFavoritesListener(); 
+                    renderBadgeReference(); // Render badge reference once Firebase is initialized
                 } else {
                     try {
                         if (initialAuthToken) {
@@ -244,6 +280,7 @@
         
         // --- UI Rendering ---
         const participantCardsContainer = document.getElementById('participant-cards');
+        const badgeReferenceList = document.getElementById('badge-reference-list');
 
         /**
          * Dynamically creates the participant cards on the page.
@@ -268,6 +305,16 @@
                 const isFavorite = name === favoriteName;
                 const card = document.createElement('div');
                 card.className = 'bg-white bg-opacity-80 p-4 rounded-2xl shadow-md flex flex-col items-center justify-center transition-transform hover:scale-105 relative';
+                
+                // Get participant's total ascent to display badges
+                const totalAscent = (currentScores[name]?.totalClimbs || 0) * METERS_PER_CLIMB;
+                let badgesHtml = '';
+                mountainBadges.forEach(badge => {
+                    if (totalAscent >= badge.heightMeters) {
+                        badgesHtml += `<span class="badge-icon" title="${badge.name} (${badge.heightMeters}m)">${badge.icon}</span>`;
+                    }
+                });
+
                 card.innerHTML = `
                     <!-- Streak icon, initially hidden -->
                     <div id="streak-${name}" class="streak-container hidden bg-red-500 text-white text-xs font-bold py-1 px-3 rounded-full">
@@ -286,11 +333,31 @@
                         <span>Week: <b id="weekly-score-${name}">0</b></span>
                         <span>Today: <b id="daily-score-${name}">0</b></span>
                     </div>
+                    <div id="badges-${name}" class="flex justify-center mt-2 h-8 items-center">
+                        ${badgesHtml}
+                    </div>
                     <button data-name="${name}" class="add-climb-btn bg-indigo-600 text-white font-bold py-2 px-6 rounded-full hover:bg-indigo-700 w-full">I Climbed!</button>
                     <button data-name="${name}" class="undo-climb-btn text-xs text-slate-400 hover:text-red-600 mt-2">Oops, undo last</button>
                 `;
                 participantCardsContainer.appendChild(card);
             });
+        }
+
+        /**
+         * Renders the list of available mountain badges at the top of the page.
+         */
+        function renderBadgeReference() {
+            if (!badgeReferenceList) return;
+            let referenceHtml = '';
+            mountainBadges.forEach(badge => {
+                referenceHtml += `
+                    <div class="badge-reference-item" title="${badge.name} (${badge.heightMeters}m)">
+                        <span class="icon">${badge.icon}</span> 
+                        <span>${badge.name} (${badge.heightMeters}m)</span>
+                    </div>
+                `;
+            });
+            badgeReferenceList.innerHTML = referenceHtml;
         }
         
         /**
@@ -362,6 +429,7 @@
                 const ascentEl = document.getElementById(`ascent-${name}`);
                 const streakEl = document.getElementById(`streak-${name}`);
                 const streakCountEl = document.getElementById(`streak-count-${name}`);
+                const badgesContainer = document.getElementById(`badges-${name}`);
 
                 if (totalEl) totalEl.textContent = data.totalClimbs || 0;
                 if (weeklyEl) weeklyEl.textContent = data.weeklyClimbs || 0;
@@ -380,9 +448,21 @@
                         streakEl.classList.add('hidden');
                     }
                 }
+
+                // Update badges display
+                if (badgesContainer) {
+                    const totalAscent = (data.totalClimbs || 0) * METERS_PER_CLIMB;
+                    let badgesHtml = '';
+                    mountainBadges.forEach(badge => {
+                        if (totalAscent >= badge.heightMeters) {
+                            badgesHtml += `<span class="badge-icon" title="${badge.name} (${badge.heightMeters}m)">${badge.icon}</span>`;
+                        }
+                    });
+                    badgesContainer.innerHTML = badgesHtml;
+                }
             });
             renderLeaderboard('leaderboard-list-overall', scores, 'totalClimbs', true);
-            renderLeaderboard('leaderboard-list-weekly', scores, 'weeklyClimbs', true);
+            renderLeaderboard('leaderboard-list-weekly', scores, 'totalClimbs', true);
         }
 
         // --- Realtime Listeners ---
