@@ -63,6 +63,9 @@
             position: absolute;
             top: 1rem;
             left: 1rem;
+            /* Increased text size and padding for the streak counter */
+            font-size: 0.875rem; /* text-sm */
+            padding: 0.25rem 0.625rem; /* py-1 px-2.5, slightly more than text-xs */
         }
 
         /* Styling for the favorite button to be positioned in the corner */
@@ -317,7 +320,7 @@
 
                 card.innerHTML = `
                     <!-- Streak icon, initially hidden -->
-                    <div id="streak-${name}" class="streak-container hidden bg-red-500 text-white text-xs font-bold py-1 px-3 rounded-full">
+                    <div id="streak-${name}" class="streak-container hidden bg-red-500 text-white font-bold py-1 px-3 rounded-full">
                         <span class="mr-1">🔥</span><span id="streak-count-${name}">0</span>
                     </div>
                     <!-- Favorite star icon -->
