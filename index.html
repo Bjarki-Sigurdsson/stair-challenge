@@ -437,11 +437,7 @@
                 const badgesContainer = document.getElementById(`badges-${name}`);
 
                 if (totalEl) totalEl.textContent = data.totalClimbs || 0;
-                let displayedWeeklyClimbs = 0;
-                if (data.lastWeeklyResetId && data.lastWeeklyResetId === currentWeekId) {
-                    displayedWeeklyClimbs = data.weeklyClimbs || 0;
-                }
-                if (weeklyEl) weeklyEl.textContent = displayedWeeklyClimbs;
+                if (weeklyEl) weeklyEl.textContent = data.weeklyClimbs || 0;
                 if (dailyEl) dailyEl.textContent = data.dailyClimbs || 0;
                 if (ascentEl) {
                     const totalAscent = (data.totalClimbs || 0) * METERS_PER_CLIMB;
@@ -855,6 +851,7 @@
     </script>
 </body>
 </html>
+
 
 
 
